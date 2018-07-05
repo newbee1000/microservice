@@ -1,0 +1,57 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.3.RELEASE")
+	classpath("se.transmode.gradle:gradle-docker:1.2")
+    }
+}
+
+group = 'springio'
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'docker'
+
+bootJar {
+    baseName = 'gs-rest-service'
+    version =  '0.1.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web")
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+}
+
+docker {
+    baseImage 'frolvlad/alpine-oraclejdk8:slim'
+    maintainer 'mcjiffy mcjiffy@mcjiffy'
+    registry 'localhost:5000'
+}
+
+task dockerBuilder(type: Docker) {
+	applicationName = jar.baseName 
+	tagVersion = jar.version 
+	volume('/tmp') 
+	addFile("./build/libs/${bootJar.baseName}-${bootJar.version}.jar","app.jar") 
+	entryPoint(["java","-Djava.security.egd=file:/dev/./urandom","-jar",'app.jar']) 
+	exposePort(8022) 
+	doFirst { 
+		copy { 
+			from jar into stageDir 
+		} 
+	} 
+} 
+
+
